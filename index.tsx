@@ -187,7 +187,7 @@ app.get('/channels-iptv.m3u', async c => {
 app.get('/provider/:provider{.+\\.m3u$}', async c => {
   const provider = c.req.param('provider').split('.m3u')[0];
 
-  const m3uFile = await generateM3uIptv(getUri(c),provider);
+  const m3uFile = await generateM3uIptv(getUri(c),false,provider);
 
   if (!m3uFile) {
     return notFound(c);
