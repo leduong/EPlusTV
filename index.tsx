@@ -50,6 +50,8 @@ import {NFL} from './services/providers/nfl/views';
 import {ESPN} from './services/providers/espn/views';
 import {ESPNPlus} from './services/providers/espn-plus/views';
 import {Gotham} from './services/providers/gotham/views';
+import { generateM3uIptv } from './services/generate-iptv';
+import { generateJson } from './services/generate-json';
 
 const notFound = (c: Context<BlankEnv, '', BlankInput>) => {
   return c.text('404 not found', 404, {
@@ -150,6 +152,42 @@ app.post('/reset-channels', async c => {
 
 app.get('/channels.m3u', async c => {
   const m3uFile = await generateM3u(getUri(c));
+
+  if (!m3uFile) {
+    return notFound(c);
+  }
+
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'application/x-mpegurl',
+  });
+});
+
+app.get('/channels.json', async c => {
+  const data = await generateJson(getUri(c));
+  if (!data) {
+    return notFound(c);
+  }
+  return c.body(JSON.stringify(data), 200, {
+    'Content-Type': 'application/json',
+  });
+});
+
+app.get('/channels-iptv.m3u', async c => {
+  const m3uFile = await generateM3uIptv(getUri(c));
+
+  if (!m3uFile) {
+    return notFound(c);
+  }
+
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'application/x-mpegurl',
+  });
+});
+
+app.get('/provider/:provider{.+\\.m3u$}', async c => {
+  const provider = c.req.param('provider').split('.m3u')[0];
+
+  const m3uFile = await generateM3uIptv(getUri(c),provider);
 
   if (!m3uFile) {
     return notFound(c);
