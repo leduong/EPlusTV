@@ -9,11 +9,11 @@ import jwt_decode from 'jwt-decode';
 import {okHttpUserAgent, adobeNesnUserAgent} from './user-agent';
 import {configPath} from './config';
 import {useNesn} from './networks';
-import {ClassTypeWithoutMethods, IEntry, IHeaders, IJWToken, IProvider} from './shared-interfaces';
+import {ClassTypeWithoutMethods, IEntry, IJWToken, IProvider, TChannelPlaybackInfo} from './shared-interfaces';
 import {db} from './database';
 import {getRandomHex, getRandomUUID} from './shared-helpers';
-import {useLinear} from './channels';
 import {debug} from './debug';
+import {usesLinear} from './misc-db-service';
 
 const ADOBE_CLIENT_ID = [
   '6',
@@ -235,6 +235,8 @@ const willTokenExpire = (token?: string): boolean => {
 };
 
 const parseAirings = async (events: INesnEvent[]) => {
+  const useLinear = await usesLinear();
+
   for (const event of events) {
     const entryExists = await db.entries.findOne<IEntry>({id: event.id});
 
@@ -430,12 +432,12 @@ class NesnHandler {
     await parseAirings(entries);
   };
 
-  public getEventData = async (eventId: string): Promise<[string, IHeaders]> => {
+  public getEventData = async (eventId: string): Promise<TChannelPlaybackInfo> => {
     try {
-      const baseUrl = ['https://', 'dtc-stream-source-backup-prod.s3.us-east-2.amazonaws.com'];
-      const nesnUrl = [...baseUrl, '/nesn_stream_android_tv'].join('');
-      const nesnPlusUrl = [...baseUrl, '/plus_stream_default'].join('');
-      const nesn4k = [...baseUrl, '/4k_stream_default'].join('');
+      const baseUrl = ['https://t2qkxvxfw6.execute-api.us-east-2.amazonaws.com/v3/stream?stream_type='];
+      const nesnUrl = [...baseUrl, 'nesn_stream'].join('');
+      const nesnPlusUrl = [...baseUrl, 'plus_stream'].join('');
+      const nesn4k = [...baseUrl, '4k_stream'].join('');
 
       await this.refreshTokens();
 
@@ -668,7 +670,7 @@ class NesnHandler {
         },
       });
 
-      return data.playbackToken;
+      return data?.subscription?.playbackToken;
     } catch (e) {
       console.error(e);
       console.log('Could not get playback token');

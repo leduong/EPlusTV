@@ -1,4 +1,5 @@
 import fs from 'fs';
+import https from 'https';
 import fsExtra from 'fs-extra';
 import path from 'path';
 import axios from 'axios';
@@ -27,15 +28,31 @@ import {
 } from './networks';
 import {IAdobeAuth, willAdobeTokenExpire, createAdobeAuthHeader} from './adobe-helpers';
 import {getRandomHex} from './shared-helpers';
-import {ClassTypeWithoutMethods, IEntry, IHeaders, IJWToken, IProvider} from './shared-interfaces';
+import {
+  ClassTypeWithoutMethods,
+  IEntry,
+  IHeaders,
+  IJWToken,
+  IProvider,
+  TChannelPlaybackInfo,
+} from './shared-interfaces';
 import {db} from './database';
-import {useLinear} from './channels';
 import {debug} from './debug';
+import {usesLinear} from './misc-db-service';
 
 global.WebSocket = ws;
 
 const espnPlusTokens = path.join(configPath, 'espn_plus_tokens.json');
 const espnLinearTokens = path.join(configPath, 'espn_linear_tokens.json');
+
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false,
+});
+
+// For `watch.graph.api.espn.com` URLs
+const instance = axios.create({
+  httpsAgent,
+});
 
 interface IAuthResources {
   [key: string]: boolean;
@@ -326,6 +343,8 @@ const parseCategories = event => {
 };
 
 const parseAirings = async events => {
+  const useLinear = await usesLinear();
+
   const now = moment();
   const endSchedule = moment().add(2, 'days').endOf('day');
 
@@ -701,13 +720,13 @@ class EspnHandler {
     }
   };
 
-  public getEventData = async (eventId: string): Promise<[string, IHeaders]> => {
+  public getEventData = async (eventId: string): Promise<TChannelPlaybackInfo> => {
     const espnPlusEnabled = await isEnabled('plus');
     espnPlusEnabled && (await this.getBamAccessToken());
     espnPlusEnabled && (await this.getGraphQlApiKey());
 
     try {
-      const {data: scenarios} = await axios.get('https://watch.graph.api.espn.com/api', {
+      const {data: scenarios} = await instance.get('https://watch.graph.api.espn.com/api', {
         params: {
           apiKey: this.graphQlApiKey,
           query: `{airing(id:"${eventId}",countryCode:"us",deviceType:SETTOP,tz:"Z") {id name description mrss:adobeRSS authTypes requiresLinearPlayback status:type startDateTime endDateTime duration source(authorization: SHIELD) { url authorizationType hasEspnId3Heartbeats hasNielsenWatermarks hasPassThroughAds commercialReplacement startSessionUrl } network { id type name adobeResource } image { url } sport { name code uid } league { name uid } program { code categoryCode isStudio } seekInSeconds simulcastAiringId airingId tracking { nielsenCrossId1 trackingId } eventId packages { name } language tier feedName brands { id name type }}}`,
@@ -872,7 +891,7 @@ class EspnHandler {
       'query Airings ( $countryCode: String!, $deviceType: DeviceType!, $tz: String!, $type: AiringType, $categories: [String], $networks: [String], $packages: [String], $eventId: String, $packageId: String, $start: String, $end: String, $day: String, $limit: Int ) { airings( countryCode: $countryCode, deviceType: $deviceType, tz: $tz, type: $type, categories: $categories, networks: $networks, packages: $packages, eventId: $eventId, packageId: $packageId, start: $start, end: $end, day: $day, limit: $limit ) { id airingId simulcastAiringId name type startDateTime shortDate: startDate(style: SHORT) authTypes adobeRSS duration feedName purchaseImage { url } image { url } network { id type abbreviation name shortName adobeResource isIpAuth } source { url authorizationType hasPassThroughAds hasNielsenWatermarks hasEspnId3Heartbeats commercialReplacement } packages { name } category { id name } subcategory { id name } sport { id name abbreviation code } league { id name abbreviation code } franchise { id name } program { id code categoryCode isStudio } tracking { nielsenCrossId1 nielsenCrossId2 comscoreC6 trackingId } } }';
     const variables = `{"deviceType":"DESKTOP","countryCode":"US","tz":"UTC+0000","type":"LIVE","networks":${networks},"packages":${packages},"limit":500}`;
 
-    const {data: entryData} = await axios.get(
+    const {data: entryData} = await instance.get(
       encodeURI(
         `https://watch.graph.api.espn.com/api?apiKey=${this.graphQlApiKey}&query=${query}&variables=${variables}`,
       ),
@@ -892,7 +911,7 @@ class EspnHandler {
       'query Airings ( $countryCode: String!, $deviceType: DeviceType!, $tz: String!, $type: AiringType, $categories: [String], $networks: [String], $packages: [String], $eventId: String, $packageId: String, $start: String, $end: String, $day: String, $limit: Int ) { airings( countryCode: $countryCode, deviceType: $deviceType, tz: $tz, type: $type, categories: $categories, networks: $networks, packages: $packages, eventId: $eventId, packageId: $packageId, start: $start, end: $end, day: $day, limit: $limit ) { id airingId simulcastAiringId name type startDateTime shortDate: startDate(style: SHORT) authTypes adobeRSS duration feedName purchaseImage { url } image { url } network { id type abbreviation name shortName adobeResource isIpAuth } source { url authorizationType hasPassThroughAds hasNielsenWatermarks hasEspnId3Heartbeats commercialReplacement } packages { name } category { id name } subcategory { id name } sport { id name abbreviation code } league { id name abbreviation code } franchise { id name } program { id code categoryCode isStudio } tracking { nielsenCrossId1 nielsenCrossId2 comscoreC6 trackingId } } }';
     const variables = `{"deviceType":"DESKTOP","countryCode":"US","tz":"UTC+0000","type":"UPCOMING","networks":${networks},"packages":${packages},"day":"${date}","limit":500}`;
 
-    const {data: entryData} = await axios.get(
+    const {data: entryData} = await instance.get(
       encodeURI(
         `https://watch.graph.api.espn.com/api?apiKey=${this.graphQlApiKey}&query=${query}&variables=${variables}`,
       ),
