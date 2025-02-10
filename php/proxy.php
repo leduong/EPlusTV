@@ -2,8 +2,12 @@
 header("Content-Type: application/json");
 
 // Ghi log vào file
-function logToFile($message) {
+function logToFile($message)
+{
+  $debug = getenv('DEBUG') ?: '';
+  if ($debug) {
     file_put_contents("/var/log/php_proxy.log", date("[Y-m-d H:i:s]") . " " . $message . "\n", FILE_APPEND);
+  }
 }
 
 // Đọc JSON từ body
@@ -14,10 +18,10 @@ $inputData = json_decode($rawInput, true);
 
 // Kiểm tra đầu vào hợp lệ
 if (!isset($inputData['url'])) {
-    http_response_code(400);
-    echo json_encode(["error" => "Missing 'url' parameter"]);
-    logToFile("Error: Missing 'url' parameter");
-    exit;
+  http_response_code(400);
+  echo json_encode(["error" => "Missing 'url' parameter"]);
+  logToFile("Error: Missing 'url' parameter");
+  exit;
 }
 
 $targetUrl = $inputData['url'];
@@ -30,17 +34,17 @@ $userAgent = $headers['User-Agent'] ?? 'Mozilla/5.0 (X11; Linux i686; rv:133.0) 
 
 // Nếu có args, thêm vào URL dưới dạng query string
 if (!empty($args)) {
-    $queryString = http_build_query($args);
-    $targetUrl .= (strpos($targetUrl, '?') === false ? '?' : '&') . $queryString;
+  $queryString = http_build_query($args);
+  $targetUrl .= (strpos($targetUrl, '?') === false ? '?' : '&') . $queryString;
 }
 
 // Kiểm tra Content-Type để encode dữ liệu phù hợp
 $contentType = $headers['Content-Type'] ?? $headers['content-type'] ?? '';
 if (stripos($contentType, 'application/x-www-form-urlencoded') !== false) {
-    logToFile("Encoding body as x-www-form-urlencoded");
-    $body = http_build_query($body);
+  logToFile("Encoding body as x-www-form-urlencoded");
+  $body = http_build_query($body);
 } else {
-    $body = json_encode($body);
+  $body = json_encode($body);
 }
 
 // Ghi log dữ liệu nhận được
@@ -52,7 +56,7 @@ logToFile("Body: " . $body);
 // Cấu hình proxy (nếu cần)
 $proxy = getenv('PROXY_URL') ?: '';
 if ($proxy) {
-    logToFile("Using proxy: " . $proxy);
+  logToFile("Using proxy: " . $proxy);
 }
 
 // Khởi tạo cURL
@@ -63,17 +67,17 @@ curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 
 if ($proxy != '') {
-    curl_setopt($ch, CURLOPT_PROXY, $proxy);
+  curl_setopt($ch, CURLOPT_PROXY, $proxy);
 }
 
 curl_setopt($ch, CURLOPT_HTTPHEADER, array_map(
-    fn($k, $v) => "$k: $v",
-    array_keys($headers),
-    $headers
+  fn($k, $v) => "$k: $v",
+  array_keys($headers),
+  $headers
 ));
 
 if ($method !== 'GET' && !empty($body)) {
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
 }
 
 curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
@@ -87,7 +91,7 @@ curl_close($ch);
 logToFile("Response Code: " . $httpCode);
 logToFile("Response Body: " . $response);
 if ($error) {
-    logToFile("cURL Error: " . $error);
+  logToFile("cURL Error: " . $error);
 }
 
 // Trả về kết quả
