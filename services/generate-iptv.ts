@@ -46,7 +46,7 @@ export const generateM3uIptv = async (uri: string, linear = false, provider = ''
     .sort({start: 1});
 
   for (const entry of scheduledEntries) {
-    const channelNum = calculateChannelFromName(`${entry.channel}`);
+    const channelNum = await calculateChannelFromName(`${entry.channel}`);
     const entryName = formatEntryName(entry);
 
     m3uFile = `${m3uFile}\n#EXTINF:-1,${entryName} ${convertToET(entry.start)}`;
