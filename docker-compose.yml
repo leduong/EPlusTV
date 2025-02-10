@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  espn-plus:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./config:/app/config
+    environment:
+      - NODE_ENV=development
+    command: npm start
+    restart: always
+    depends_on:
+      - php-proxy
+  php-proxy:
+    image: leduong/php:proxy
+    ports:
+      - "8283:3000"
+    environment:
+      - PROXY_URL=
+    restart: always
