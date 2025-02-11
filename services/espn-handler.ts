@@ -234,14 +234,14 @@ const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
       url: endpoint.href,
     };
 
-    const {data} = await axios.post('http://php-proxy:8283', bodyPHP, {
+    const {data} = await axios.post('http://php-proxy:3000', bodyPHP, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
     return data;
   } else {
-    const {data} = await axios.get('http://php-proxy:8283', {
+    const {data} = await axios.get('http://php-proxy:3000', {
       headers,
       url: endpoint.href,
     });

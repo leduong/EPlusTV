@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   espn-plus:
     build:
@@ -17,8 +15,6 @@ services:
       - php-proxy
   php-proxy:
     image: leduong/php:proxy
-    ports:
-      - "8283:3000"
     environment:
       - PROXY_URL=
     restart: always
