@@ -1155,7 +1155,8 @@ class EspnHandler {
           {
             id_token: this.tokens.id_token,
           },
-          this.device_refresh_token.access_token,
+          this.device_refresh_token.access_token ||
+            'eyJ6aXAiOiJERUYiLCJraWQiOiJNZHRlcVJ2R04yTDg3dW5OM2g5QzdReF9MUGNRdGN4VTZZNnk5UjF4eHBFIiwiY3R5IjoiSldUIiwiZW5jIjoiQzIwUCIsImFsZyI6ImRpciJ9..LmqevOIE9r-WD8_I.jxn8hpdG90KRY2n822MUSlCKvI_SRpJB3SYJj_QyjqrHaX0x55njRyFgNfktZrTh47UM-S2jvpZtVgTTIgrUccLNn62TFtMeCW5EbU83KTkA-QdlfkxgNRPl-diX28Pp5rgo245Bv0bQSt1DU5d_hW-hGb28WnFHEpZRdB5xsy_LaBF_6hzSaWGbZyxYBP_jVm5i1XeVYZi3sF84z5Lnfi5hRM5f49dw4fvGzp627NR7D_jYlrJ90I9I9L70vTpBZqG2uA-r1cFZENzmeIxShv0JGxwVDr7UhE2o-8tKwfzgiN0fkUduhdt30wnl8b4sRyCYFvykJIAfqzlELFBtbZttsmCzoF…xuDt7Y1NLTRSGyXlkHFwakMiz8WhwKew2Jb0M02-E8BEkZptAtAglbSPhSS3_iwObla245ZZDV1WXgZrHrsyU6duj65JiZjDTa1HfKGwr9NpNqaqdhujJ9oo93Hg7ER-_FxpT1Am0gg45sh7hq0KTOSaEjM7GXv80BIFg4BOjqkkJDsFivaQr5nFeK9gv_JMJFQICCqyCYJ4NSsPIXt4pa2CpXDsV7JblwV8OZs910TgVcmlQ7UNcUa7uywQT97Ura15nSH2-uXxdIZomyNTewUa2xIjLCa2LKe1s_csU0The6DQoIwwER1isThB4BTpLXrJefq8WsYOC0YgjXNM6mNyQYuoh_V2MC0jj2Ke26srb-59BSWXl7tcPttMCqiJJrcB3qFYsEw7RN_2N3cK0lFJ_mh7Zm6d78aK8JQkUN7liI8WJYY6Q9EX5ilfREAzAV87GkjhKhyd8J92iHhwS9lbP8RVqMGQXXf97Qir.RVAoC4Bx3a-Z4Y52czSG-w',
         );
 
         await this.save();
