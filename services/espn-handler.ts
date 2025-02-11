@@ -1203,7 +1203,9 @@ class EspnHandler {
           // setCookie: false,
         });
 
-        await this.save();
+        if (this.device_refresh_token) {
+          await this.save();
+        }
       } catch (e) {
         console.error(e);
         console.log('Could not get device token exchange');
