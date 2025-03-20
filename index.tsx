@@ -53,25 +53,7 @@ import {Script} from './views/Script';
 import {Tools} from './views/Tools';
 import {Options} from './views/Options';
 
-import {CBSSports} from './services/providers/cbs-sports/views';
-import {MntWest} from './services/providers/mw/views';
-import {NorthernSun} from './services/providers/nsic/views';
-import {Paramount} from './services/providers/paramount/views';
-import {FloSports} from './services/providers/flosports/views';
-import {MlbTv} from './services/providers/mlb/views';
-import {FoxSports} from './services/providers/fox/views';
-import {Nesn} from './services/providers/nesn/views';
-import {B1G} from './services/providers/b1g/views';
-import {NFL} from './services/providers/nfl/views';
-import {ESPN} from './services/providers/espn/views';
 import {ESPNPlus} from './services/providers/espn-plus/views';
-import {Gotham} from './services/providers/gotham/views';
-import {WSN} from './services/providers/wsn/views';
-import {PWHL} from './services/providers/pwhl/views';
-import {LOVB} from './services/providers/lovb/views';
-import {NHL} from './services/providers/nhl-tv/views';
-import {Victory} from './services/providers/victory/views';
-import {KBO} from './services/providers/kbo/views';
 
 import {
   initMiscDb,
@@ -112,26 +94,7 @@ const getUri = (c: Context<BlankEnv, '', BlankInput>): string => {
 const schedule = async () => {
   console.log('=== Getting events ===');
 
-  await Promise.all([
-    espnHandler.getSchedule(),
-    foxHandler.getSchedule(),
-    mlbHandler.getSchedule(),
-    b1gHandler.getSchedule(),
-    floSportsHandler.getSchedule(),
-    mwHandler.getSchedule(),
-    wsnHandler.getSchedule(),
-    pwhlHandler.getSchedule(),
-    lovbHandler.getSchedule(),
-    nsicHandler.getSchedule(),
-    nflHandler.getSchedule(),
-    paramountHandler.getSchedule(),
-    gothamHandler.getSchedule(),
-    nesnHandler.getSchedule(),
-    cbsHandler.getSchedule(),
-    nhlHandler.getSchedule(),
-    victoryHandler.getSchedule(),
-    kboHandler.getSchedule(),
-  ]);
+  await Promise.all([espnHandler.getSchedule()]);
 
   console.log('=== Done getting events ===');
   console.log('=== Building the schedule ===');
@@ -160,24 +123,6 @@ app.get('/', async c => {
             <Options />
             <Providers>
               <ESPNPlus />
-              <NFL />
-              <MlbTv />
-              <FoxSports />
-              <CBSSports />
-              <ESPN />
-              <Paramount />
-              <Nesn />
-              <Gotham />
-              <Victory />
-              <B1G />
-              <FloSports />
-              <NHL />
-              <MntWest />
-              <NorthernSun />
-              <PWHL />
-              <LOVB />
-              <WSN />
-              <KBO />
             </Providers>
           </Main>
           <Style />
