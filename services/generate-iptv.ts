@@ -37,7 +37,7 @@ const formatEntryName = (entry: IEntry) => {
 export const generateM3uIptv = async (uri: string, linear = false, provider = ''): Promise<string> => {
   let m3uFile = '#EXTM3U';
 
-  const scheduledEntries = await db.entries
+  const scheduledEntries: any = await db.entries
     .find<IEntry>({
       channel: {$exists: true},
       from: provider ? provider : {$exists: false},

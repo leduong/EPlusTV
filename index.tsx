@@ -84,6 +84,8 @@ import {
   setXmltvPadding,
   setEventFilters,
 } from './services/misc-db-service';
+import {generateM3uIptv} from './services/generate-iptv';
+import {generateJson} from './services/generate-json';
 
 // Set timeout of requests to 1 minute
 axios.defaults.timeout = 1000 * 60;
