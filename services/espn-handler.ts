@@ -171,7 +171,7 @@ const REFRESH_AUTH_URL = '/{id-provider}/guest/refresh-auth?langPref=en-US';
 
 const BAM_API_KEY = 'ZXNwbiZicm93c2VyJjEuMC4w.ptUt7QxsteaRruuPmGZFaJByOoqKvDP2a5YkInHrc7c';
 const BAM_APP_CONFIG =
-  'https://bam-sdk-configs.bamgrid.com/bam-sdk/v2.0/espn-a9b93989/browser/v3.4/linux/chrome/prod.json';
+  'https://bam-sdk-configs.bamgrid.com/bam-sdk/v5.0/espn-a9b93989/browser/v27.1/macosx/firefox/prod.json'; // 'https://bam-sdk-configs.bamgrid.com/bam-sdk/v2.0/espn-a9b93989/browser/v3.4/linux/chrome/prod.json';
 
 const LINEAR_NETWORKS = ['espn1', 'espn2', 'espnu', 'sec', 'acc', 'espnews'];
 
@@ -227,8 +227,8 @@ const fixHeaderKey = (headerVal: string, authToken = '') =>
   headerVal.replace('{apiKey}', BAM_API_KEY).replace('{accessToken}', authToken);
 
 const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
-  const headers = {};
-  let reqBody: any = _.cloneDeep(body);
+  const headers = {'User-Agent': userAgent};
+  const reqBody: any = _.cloneDeep(body);
 
   Object.entries(endpoint.headers).forEach(([key, value]) => {
     headers[key] = fixHeaderKey(value, authToken);
@@ -238,14 +238,27 @@ const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
     headers['Content-Type'] === 'application/x-www-form-urlencoded' ||
     headers['content-type'] === 'application/x-www-form-urlencoded'
   ) {
-    reqBody = new url.URLSearchParams(reqBody).toString();
+    // reqBody = new url.URLSearchParams(reqBody).toString();
   }
-
   if (endpoint.method === 'POST') {
-    const {data} = await axios.post(endpoint.href, reqBody, {headers});
+    const bodyPHP = {
+      body: reqBody,
+      headers,
+      method: 'POST',
+      url: endpoint.href,
+    };
+
+    const {data} = await axios.post('http://php-proxy:3000', bodyPHP, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     return data;
   } else {
-    const {data} = await axios.get(endpoint.href, {headers});
+    const {data} = await axios.get('http://php-proxy:3000', {
+      headers,
+      url: endpoint.href,
+    });
     return data;
   }
 };
@@ -1347,7 +1360,7 @@ class EspnHandler {
           latitude: 0,
           longitude: 0,
           platform: 'browser',
-          setCookie: false,
+          // setCookie: false,
           subject_token: this.device_grant.assertion,
           subject_token_type: 'urn:bamtech:params:oauth:token-type:device',
         });
@@ -1372,11 +1385,13 @@ class EspnHandler {
           longitude: 0,
           platform: 'browser',
           refresh_token: this.device_token_exchange.refresh_token,
-          setCookie: false,
+          // setCookie: false,
         });
         this.device_refresh_token_expires = moment().add(this.device_refresh_token.expires_in, 'seconds').valueOf();
 
-        await this.save();
+        if (this.device_refresh_token) {
+          await this.save();
+        }
       } catch (e) {
         console.error(e);
         console.log('Could not get device token exchange');
@@ -1394,7 +1409,7 @@ class EspnHandler {
           latitude: 0,
           longitude: 0,
           platform: 'browser',
-          setCookie: false,
+          // setCookie: false,
           subject_token: this.id_token_grant.assertion,
           subject_token_type: 'urn:bamtech:params:oauth:token-type:account',
         });

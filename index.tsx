@@ -362,6 +362,42 @@ app.get('/channels.m3u', async c => {
   });
 });
 
+app.get('/channels.json', async c => {
+  const data = await generateJson(getUri(c));
+  if (!data) {
+    return notFound(c);
+  }
+  return c.body(JSON.stringify(data), 200, {
+    'Content-Type': 'application/json',
+  });
+});
+
+app.get('/channels-iptv.m3u', async c => {
+  const m3uFile = await generateM3uIptv(getUri(c));
+
+  if (!m3uFile) {
+    return notFound(c);
+  }
+
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'text/plain',
+  });
+});
+
+app.get('/provider/:provider{.+\\.m3u$}', async c => {
+  const provider = c.req.param('provider').split('.m3u')[0];
+
+  const m3uFile = await generateM3uIptv(getUri(c), false, provider);
+
+  if (!m3uFile) {
+    return notFound(c);
+  }
+
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'text/plain',
+  });
+});
+
 app.get('/linear-channels.m3u', async c => {
   const useLinear = await usesLinear();
 
