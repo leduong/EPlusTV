@@ -1163,9 +1163,43 @@ class EspnHandler {
     try {
       const deviceUrl = ['https://', 'espn.api.edge.bamgrid.com', '/graph/v1/', 'device/graphql'].join('');
 
-      const {data: deviceData}: any = await axios.post(
-        deviceUrl,
-        {
+      // const {data: deviceData}: any = await axios.post(
+      //   deviceUrl,
+      //   {
+      //     operationName: 'registerDevice',
+      //     query:
+      //       '\n    mutation registerDevice($input: RegisterDeviceInput!) {\n        registerDevice(registerDevice: $input) {\n            grant {\n                grantType\n                assertion\n            }\n        }\n    }\n',
+      //     variables: {
+      //       input: {
+      //         applicationRuntime: 'chrome',
+      //         attributes: {
+      //           brand: 'web',
+      //           browserName: 'chrome',
+      //           browserVersion: '128.0.0',
+      //           manufacturer: 'apple',
+      //           model: null,
+      //           operatingSystem: 'macintosh',
+      //           operatingSystemVersion: '10.15.7',
+      //           osDeviceIds: [],
+      //         },
+      //         deviceFamily: 'browser',
+      //         deviceLanguage: 'en-US',
+      //         devicePlatformId: 'browser',
+      //         deviceProfile: 'macosx',
+      //       },
+      //     },
+      //   },
+      //   {
+      //     headers: {
+      //       Authorization: BAM_API_KEY,
+      //       'Content-Type': 'application/json',
+      //       'User-Agent': userAgent,
+      //     },
+      //   },
+      // );
+
+      const bodyPHP = {
+        body: {
           operationName: 'registerDevice',
           query:
             '\n    mutation registerDevice($input: RegisterDeviceInput!) {\n        registerDevice(registerDevice: $input) {\n            grant {\n                grantType\n                assertion\n            }\n        }\n    }\n',
@@ -1189,16 +1223,24 @@ class EspnHandler {
             },
           },
         },
-        {
-          headers: {
-            Authorization: BAM_API_KEY,
-            'Content-Type': 'application/json',
-            'User-Agent': userAgent,
-          },
+        headers: {
+          Authorization: BAM_API_KEY,
+          'Content-Type': 'application/json',
+          'User-Agent': userAgent,
         },
-      );
+        method: 'POST',
+        url: deviceUrl,
+      };
 
-      const zip_code = deviceData.extensions.sdk.session.location.zipCode ?? 11801;
+      console.log({bodyPHP});
+
+      const {data: deviceData} = await axios.post('http://php-proxy:3000', bodyPHP, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const zip_code = deviceData.extensions.sdk.session?.location?.zipCode ?? 11801;
 
       await db.providers.updateAsync({name: 'espnplus'}, {$set: {'meta.zip_code': zip_code}});
 
