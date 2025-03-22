@@ -228,7 +228,7 @@ const fixHeaderKey = (headerVal: string, authToken = '') =>
 
 const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
   const headers = {'User-Agent': userAgent};
-  let reqBody: any = _.cloneDeep(body);
+  const reqBody: any = _.cloneDeep(body);
 
   Object.entries(endpoint.headers).forEach(([key, value]) => {
     headers[key] = fixHeaderKey(value, authToken);
@@ -238,7 +238,7 @@ const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
     headers['Content-Type'] === 'application/x-www-form-urlencoded' ||
     headers['content-type'] === 'application/x-www-form-urlencoded'
   ) {
-    reqBody = new url.URLSearchParams(reqBody).toString();
+    // reqBody = new url.URLSearchParams(reqBody).toString();
   }
 
   if (endpoint.method === 'POST') {
