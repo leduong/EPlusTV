@@ -227,7 +227,8 @@ const fixHeaderKey = (headerVal: string, authToken = '') =>
   headerVal.replace('{apiKey}', BAM_API_KEY).replace('{accessToken}', authToken);
 
 const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
-  const headers = {};
+  console.log({endpoint});
+  const headers = {'User-Agent': userAgent};
   let reqBody: any = _.cloneDeep(body);
 
   Object.entries(endpoint.headers).forEach(([key, value]) => {
@@ -495,7 +496,7 @@ class EspnHandler {
       });
 
       if (fs.existsSync(espnPlusTokens)) {
-        fs.rmSync(espnPlusTokens);
+        // fs.rmSync(espnPlusTokens);
       }
     }
 
@@ -1138,7 +1139,7 @@ class EspnHandler {
     try {
       const deviceUrl = ['https://', 'espn.api.edge.bamgrid.com', '/graph/v1/', 'device/graphql'].join('');
 
-      const {data: deviceData} = await axios.post(
+      const {data: deviceData}: any = await axios.post(
         deviceUrl,
         {
           operationName: 'registerDevice',
@@ -1173,7 +1174,7 @@ class EspnHandler {
         },
       );
 
-      const zip_code = deviceData.extensions.sdk.session.location.zipCode;
+      const zip_code = deviceData.extensions.sdk.session.location.zipCode ?? 11801;
 
       await db.providers.updateAsync({name: 'espnplus'}, {$set: {'meta.zip_code': zip_code}});
 

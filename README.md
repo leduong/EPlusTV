@@ -172,6 +172,10 @@ Available to login with FloSports credentials
 
 Available for free
 
+#### Northern Sun
+
+Available for free
+
 #### MLB.tv
 
 Available to login with MLB.tv credentials
