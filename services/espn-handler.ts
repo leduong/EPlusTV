@@ -227,7 +227,6 @@ const fixHeaderKey = (headerVal: string, authToken = '') =>
   headerVal.replace('{apiKey}', BAM_API_KEY).replace('{accessToken}', authToken);
 
 const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
-  console.log({endpoint});
   const headers = {'User-Agent': userAgent};
   let reqBody: any = _.cloneDeep(body);
 
@@ -250,6 +249,8 @@ const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
       url: endpoint.href,
     };
 
+    console.log({bodyPHP});
+
     const {data} = await axios.post('http://php-proxy:3000', bodyPHP, {
       headers: {
         'Content-Type': 'application/json',
@@ -257,10 +258,8 @@ const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
     });
     return data;
   } else {
-    const {data} = await axios.get('http://php-proxy:3000', {
-      headers,
-      url: endpoint.href,
-    });
+    console.log({endpointHref: endpoint.href});
+    const {data} = await axios.get(endpoint.href, {headers});
     return data;
   }
 
