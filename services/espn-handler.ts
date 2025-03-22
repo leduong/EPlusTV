@@ -259,7 +259,10 @@ const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
     return data;
   } else {
     console.log({endpointHref: endpoint.href});
-    const {data} = await axios.get(endpoint.href, {headers});
+    const {data} = await axios.get('http://php-proxy:3000', {
+      headers,
+      url: endpoint.href,
+    });
     return data;
   }
 
