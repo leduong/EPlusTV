@@ -243,12 +243,34 @@ const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
   }
 
   if (endpoint.method === 'POST') {
-    const {data} = await axios.post(endpoint.href, reqBody, {headers});
+    const bodyPHP = {
+      body: reqBody,
+      headers,
+      method: 'POST',
+      url: endpoint.href,
+    };
+
+    const {data} = await axios.post('http://php-proxy:3000', bodyPHP, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     return data;
   } else {
-    const {data} = await axios.get(endpoint.href, {headers});
+    const {data} = await axios.get('http://php-proxy:3000', {
+      headers,
+      url: endpoint.href,
+    });
     return data;
   }
+
+  // if (endpoint.method === 'POST') {
+  //   const {data} = await axios.post(endpoint.href, reqBody, {headers});
+  //   return data;
+  // } else {
+  //   const {data} = await axios.get(endpoint.href, {headers});
+  //   return data;
+  // }
 };
 
 const getNetworkInfo = (network?: string) => {
