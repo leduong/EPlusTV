@@ -256,6 +256,7 @@ const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
         'Content-Type': 'application/json',
       },
     });
+    console.log({data});
     return data;
   } else {
     console.log({endpointHref: endpoint.href});
@@ -263,6 +264,7 @@ const makeApiCall = async (endpoint: IEndpoint, body: any, authToken = '') => {
       headers,
       url: endpoint.href,
     });
+    console.log({data});
     return data;
   }
 
