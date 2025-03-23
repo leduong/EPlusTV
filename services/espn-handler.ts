@@ -1240,7 +1240,7 @@ class EspnHandler {
         },
       });
 
-      const zip_code = deviceData.extensions.sdk.session?.location?.zipCode ?? 11801;
+      const zip_code = deviceData.extensions?.sdk?.session?.location?.zipCode ?? 11801;
 
       await db.providers.updateAsync({name: 'espnplus'}, {$set: {'meta.zip_code': zip_code}});
 
