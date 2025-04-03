@@ -127,7 +127,7 @@ export class PlaylistHandler {
       const realManifestUrl = request.res.responseUrl;
       const urlParams = this.network === 'foxsports' ? new URL(realManifestUrl).search : '';
 
-      const playlist = HLS.parse(manifest);
+      const playlist: any = HLS.parse(manifest);
 
       /** Sort playlist so highest resolution is first in list (Emby workaround) */
       playlist.variants?.sort((v1, v2) => {
@@ -231,7 +231,7 @@ export class PlaylistHandler {
       const clonedChunklist = updateVersion(chunkList);
       let updatedChunkList = clonedChunklist;
 
-      const chunks = HLS.parse(clonedChunklist);
+      const chunks: any = HLS.parse(clonedChunklist);
 
       const shouldProxy =
         proxyAllSegments || baseManifestUrl.includes('akamai') || this.network === 'mlbtv' || this.network === 'gotham';

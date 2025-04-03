@@ -2,95 +2,30 @@ import {Context, Hono} from 'hono';
 import {serve} from '@hono/node-server';
 import {serveStatic} from '@hono/node-server/serve-static';
 import {BlankEnv, BlankInput} from 'hono/types';
-import {html} from 'hono/html';
 import moment from 'moment';
-import _ from 'lodash';
+
 import axios from 'axios';
 
 import fs from 'fs';
 import {createServer} from 'node:https';
 
 import {generateM3u} from './services/generate-m3u';
-import {initDirectories} from './services/init-directories';
 import {generateXml} from './services/generate-xmltv';
 import {launchChannel} from './services/launch-channel';
 import {scheduleEntries} from './services/build-schedule';
 import {espnHandler} from './services/espn-handler';
-import {foxHandler} from './services/fox-handler';
 import {mlbHandler} from './services/mlb-handler';
-import {b1gHandler} from './services/b1g-handler';
-import {floSportsHandler} from './services/flo-handler';
-import {paramountHandler} from './services/paramount-handler';
-import {nflHandler} from './services/nfl-handler';
-import {gothamHandler} from './services/gotham-handler';
-import {mwHandler} from './services/mw-handler';
-import {pwhlHandler} from './services/pwhl-handler';
-import {lovbHandler} from './services/lovb-handler';
-import {ballyHandler} from './services/bally-handler';
-import {wsnHandler} from './services/wsn-handler';
-import {nwslHandler} from './services/nwsl-handler';
-import {nsicHandler} from './services/nsic-handler';
-import {nesnHandler} from './services/nesn-handler';
-import {cbsHandler} from './services/cbs-handler';
-import {nhlHandler} from './services/nhltv-handler';
-import {victoryHandler} from './services/victory-handler';
-import {kboHandler} from './services/kbo-handler';
-import {
-  cleanEntries,
-  clearChannels,
-  removeAllEntries,
-  removeChannelStatus,
-  resetSchedule,
-} from './services/shared-helpers';
+
+import {cleanEntries, removeChannelStatus} from './services/shared-helpers';
 import {appStatus} from './services/app-status';
 import {SERVER_PORT} from './services/port';
-import {providers} from './services/providers';
 
 import {version} from './package.json';
 
-import {Layout} from './views/Layout';
-import {Header} from './views/Header';
-import {Main} from './views/Main';
-import {Links} from './views/Links';
-import {Style} from './views/Style';
-import {Providers} from './views/Providers';
-import {Script} from './views/Script';
-import {Tools} from './views/Tools';
-import {Options} from './views/Options';
+import {usesLinear, initMiscDb} from './services/misc-db-service';
+import {generateM3uIptv, generateM3uTeam, generateM3uTeams} from './services/generate-iptv';
 
-import {CBSSports} from './services/providers/cbs-sports/views';
-import {MntWest} from './services/providers/mw/views';
-import {NorthernSun} from './services/providers/nsic/views';
-import {Paramount} from './services/providers/paramount/views';
-import {FloSports} from './services/providers/flosports/views';
-import {MlbTv} from './services/providers/mlb/views';
-import {FoxSports} from './services/providers/fox/views';
-import {Nesn} from './services/providers/nesn/views';
-import {B1G} from './services/providers/b1g/views';
-import {NFL} from './services/providers/nfl/views';
-import {ESPN} from './services/providers/espn/views';
-import {ESPNPlus} from './services/providers/espn-plus/views';
-import {Gotham} from './services/providers/gotham/views';
-import {WSN} from './services/providers/wsn/views';
-import {PWHL} from './services/providers/pwhl/views';
-import {LOVB} from './services/providers/lovb/views';
-import {Bally} from './services/providers/bally/views';
-import {Nwsl} from './services/providers/nwsl/views';
-import {NHL} from './services/providers/nhl-tv/views';
-import {Victory} from './services/providers/victory/views';
-import {KBO} from './services/providers/kbo/views';
-
-import {
-  initMiscDb,
-  resetLinearStartChannel,
-  setLinear,
-  setNumberofChannels,
-  setProxySegments,
-  setStartChannel,
-  usesLinear,
-  setXmltvPadding,
-  setEventFilters,
-} from './services/misc-db-service';
+import {initDirectories} from './services/init-directories';
 
 // Check for SSL environment variables
 const sslCertificatePath = process.env.SSL_CERTIFICATE_PATH;
@@ -121,28 +56,7 @@ const getUri = (c: Context<BlankEnv, '', BlankInput>): string => {
 const schedule = async () => {
   console.log('=== Getting events ===');
 
-  await Promise.all([
-    espnHandler.getSchedule(),
-    foxHandler.getSchedule(),
-    mlbHandler.getSchedule(),
-    b1gHandler.getSchedule(),
-    floSportsHandler.getSchedule(),
-    mwHandler.getSchedule(),
-    wsnHandler.getSchedule(),
-    pwhlHandler.getSchedule(),
-    lovbHandler.getSchedule(),
-    ballyHandler.getSchedule(),
-    nsicHandler.getSchedule(),
-    nflHandler.getSchedule(),
-    nwslHandler.getSchedule(),
-    paramountHandler.getSchedule(),
-    gothamHandler.getSchedule(),
-    nesnHandler.getSchedule(),
-    cbsHandler.getSchedule(),
-    nhlHandler.getSchedule(),
-    victoryHandler.getSchedule(),
-    kboHandler.getSchedule(),
-  ]);
+  await Promise.all([espnHandler.getSchedule(), mlbHandler.getSchedule()]);
 
   console.log('=== Done getting events ===');
   console.log('=== Building the schedule ===');
@@ -155,214 +69,62 @@ const schedule = async () => {
 
 const app = new Hono();
 
-app.use('/node_modules/*', serveStatic({root: './'}));
 app.use('/favicon.ico', serveStatic({root: './'}));
 
-app.route('/', providers);
-
 app.get('/', async c => {
-  return c.html(
-    html`<!DOCTYPE html>${(
-        <Layout>
-          <Header />
-          <Main>
-            <Links baseUrl={getUri(c)} />
-            <Tools />
-            <Options />
-            <Providers>
-              <ESPNPlus />
-              <NFL />
-              <MlbTv />
-              <FoxSports />
-              <CBSSports />
-              <ESPN />
-              <Paramount />
-              <Nesn />
-              <Gotham />
-              <Victory />
-              <B1G />
-              <FloSports />
-              <NHL />
-              <MntWest />
-              <NorthernSun />
-              <Bally />
-              <PWHL />
-              <Nwsl />
-              <LOVB />
-              <WSN />
-              <KBO />
-            </Providers>
-          </Main>
-          <Style />
-          <Script />
-        </Layout>
-      )}`,
-  );
+  return notFound(c);
 });
 
-app.post('/rebuild-epg', async c => {
-  await removeAllEntries();
-  await schedule();
+app.get('/channels-iptv.m3u', async c => {
+  const m3uFile = await generateM3uIptv(getUri(c));
 
-  return c.html(<Tools />, 200, {
-    'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully rebuilt EPG"}}`,
-  });
-});
-
-app.post('/reset-channels', async c => {
-  clearChannels();
-
-  return c.html(<Tools />, 200, {
-    'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully cleared channels"}}`,
-  });
-});
-
-app.post('/start-channel', async c => {
-  const body = await c.req.parseBody();
-  const startChannel = _.toNumber(body['start-channel']);
-
-  if (_.isNaN(startChannel) || startChannel < 1 || startChannel > 10000) {
-    return c.html(<Options />, 200, {
-      'HX-Trigger': `{"HXToast":{"type":"error","body":"Starting channel must be a valid number"}}`,
-    });
+  if (!m3uFile) {
+    return notFound(c);
   }
 
-  await setStartChannel(startChannel);
-  await resetLinearStartChannel();
-  await resetSchedule();
-  await scheduleEntries();
-
-  return c.html(<Options />, 200, {
-    'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully saved starting channel number"}}`,
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'text/plain',
   });
 });
 
-app.post('/num-of-channels', async c => {
-  const body = await c.req.parseBody();
-  const numChannels = _.toNumber(body['num-of-channels']);
+app.get('/teams.m3u', async c => {
+  const m3uFile = await generateM3uTeams(getUri(c));
 
-  if (_.isNaN(numChannels) || numChannels < 0 || numChannels > 5000) {
-    return c.html(<Options />, 200, {
-      'HX-Trigger': `{"HXToast":{"type":"error","body":"Number of channels must be a valid number"}}`,
-    });
+  if (!m3uFile) {
+    return notFound(c);
   }
 
-  await setNumberofChannels(numChannels);
-  await resetLinearStartChannel();
-  await resetSchedule();
-  await scheduleEntries();
-
-  return c.html(<Options />, 200, {
-    'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully saved number of channels"}}`,
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'text/plain',
   });
 });
 
-app.post('/linear-channels', async c => {
-  const body = await c.req.parseBody();
-  const enabled = body['linear-channels'] === 'on';
+app.get('/team/:team{.+\\.m3u$}', async c => {
+  const team = c.req.param('team').split('.m3u')[0];
 
-  await setLinear(enabled);
+  const m3uFile = await generateM3uTeam(getUri(c), team, false);
 
-  if (enabled) {
-    await removeAllEntries();
-    await schedule();
-  } else {
-    await scheduleEntries();
+  if (!m3uFile) {
+    return notFound(c);
   }
 
-  return c.html(
-    <input
-      hx-target="this"
-      hx-swap="outerHTML"
-      hx-trigger="change"
-      hx-post="/linear-channels"
-      name="linear-channels"
-      type="checkbox"
-      role="switch"
-      checked={enabled}
-      data-enabled={enabled ? 'true' : 'false'}
-    />,
-    200,
-    {
-      'HX-Trigger': `{"HXRefresh": true, "HXToast":{"type":"success","body":"Successfully ${
-        enabled ? 'enabled' : 'disabled'
-      } dedicated linear channels. Page will refresh momentarily"}}`,
-    },
-  );
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'text/plain',
+  });
 });
 
-app.post('/proxy-segments', async c => {
-  const body = await c.req.parseBody();
-  const enabled = body['proxy-segments'] === 'on';
+app.get('/provider/:provider{.+\\.m3u$}', async c => {
+  const provider = c.req.param('provider').split('.m3u')[0];
 
-  await setProxySegments(enabled);
+  const m3uFile = await generateM3uIptv(getUri(c), false, provider);
 
-  return c.html(
-    <input
-      hx-post="/proxy-segments"
-      hx-target="this"
-      hx-swap="outerHTML"
-      hx-trigger="change"
-      name="proxy-segments"
-      type="checkbox"
-      role="switch"
-      checked={enabled}
-      data-enabled={enabled ? 'true' : 'false'}
-    />,
-    200,
-    {
-      'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully ${
-        enabled ? 'enabled' : 'disabled'
-      } proxying of segment files"}}`,
-    },
-  );
-});
+  if (!m3uFile) {
+    return notFound(c);
+  }
 
-app.post('/xmltv-padding', async c => {
-  const body = await c.req.parseBody();
-  const enabled = body['xmltv-padding'] === 'on';
-
-  await setXmltvPadding(enabled);
-
-  return c.html(
-    <input
-      hx-post="/xmltv-padding"
-      hx-target="this"
-      hx-swap="outerHTML"
-      hx-trigger="change"
-      name="xmltv-padding"
-      type="checkbox"
-      role="switch"
-      checked={enabled}
-      data-enabled={enabled ? 'true' : 'false'}
-    />,
-    200,
-    {
-      'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully ${
-        enabled ? 'enabled' : 'disabled'
-      } XMLTV padding"}}`,
-    },
-  );
-});
-
-app.put('/event-filters', async c => {
-  const body = await c.req.parseBody();
-  const category_filter = body['category-filter'].toString();
-  const title_filter = body['title-filter'].toString();
-
-  await setEventFilters(category_filter, title_filter);
-  await resetSchedule();
-  await scheduleEntries();
-
-  return c.html(
-    <button type="submit" id="event-filters-button">
-      Save and Apply Event Filters
-    </button>,
-    200,
-    {
-      'HX-Trigger': `{"HXToast":{"type":"success","body":"Successfully saved and applied event filters"}}`,
-    },
-  );
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'text/plain',
+  });
 });
 
 app.get('/channels.m3u', async c => {
@@ -573,45 +335,9 @@ process.on('SIGINT', shutDown);
 
   await initMiscDb();
 
-  await Promise.all([
-    espnHandler.initialize(),
-    foxHandler.initialize(),
-    mlbHandler.initialize(),
-    b1gHandler.initialize(),
-    floSportsHandler.initialize(),
-    nflHandler.initialize(),
-    nwslHandler.initialize(),
-    paramountHandler.initialize(),
-    gothamHandler.initialize(),
-    nesnHandler.initialize(),
-    cbsHandler.initialize(),
-    victoryHandler.initialize(),
-    nhlHandler.initialize(),
-    mwHandler.initialize(),
-    wsnHandler.initialize(),
-    pwhlHandler.initialize(),
-    lovbHandler.initialize(),
-    ballyHandler.initialize(),
-    nsicHandler.initialize(),
-    kboHandler.initialize(),
-  ]);
+  await Promise.all([espnHandler.initialize(), mlbHandler.initialize()]);
 
-  await Promise.all([
-    espnHandler.refreshTokens(),
-    foxHandler.refreshTokens(),
-    mlbHandler.refreshTokens(),
-    b1gHandler.refreshTokens(),
-    floSportsHandler.refreshTokens(),
-    nflHandler.refreshTokens(),
-    nwslHandler.refreshTokens(),
-    paramountHandler.refreshTokens(),
-    gothamHandler.refreshTokens(),
-    nesnHandler.refreshTokens(),
-    cbsHandler.refreshTokens(),
-    victoryHandler.refreshTokens(),
-    nhlHandler.refreshTokens(),
-  ]);
-
+  await Promise.all([espnHandler.refreshTokens(), mlbHandler.refreshTokens()]);
   if (sslCertificatePath && sslPrivateKeyPath) {
     serve(
       {
@@ -649,25 +375,7 @@ setInterval(async () => {
 }, 1000 * 60 * 60 * 4);
 
 // Check for updated refresh tokens 30 minutes
-setInterval(
-  () =>
-    Promise.all([
-      espnHandler.refreshTokens(),
-      foxHandler.refreshTokens(),
-      mlbHandler.refreshTokens(),
-      b1gHandler.refreshTokens(),
-      floSportsHandler.refreshTokens(),
-      nflHandler.refreshTokens(),
-      nwslHandler.refreshTokens(),
-      paramountHandler.refreshTokens(),
-      gothamHandler.refreshTokens(),
-      nesnHandler.refreshTokens(),
-      cbsHandler.refreshTokens(),
-      victoryHandler.refreshTokens(),
-      nhlHandler.refreshTokens(),
-    ]),
-  1000 * 60 * 30,
-);
+setInterval(() => Promise.all([espnHandler.refreshTokens(), mlbHandler.refreshTokens()]), 1000 * 60 * 30);
 
 // Remove idle playlists
 setInterval(() => {
