@@ -6,15 +6,19 @@ import {getLinearStartChannel, usesLinear} from './misc-db-service';
 import {gothamHandler} from './gotham-handler';
 
 export const checkChannelEnabled = async (provider: string, channelId: string): Promise<boolean> => {
-  const {enabled, linear_channels} = await db.providers.findOneAsync<IProvider>({name: provider});
+  try {
+    const {enabled, linear_channels} = await db.providers.findOneAsync<IProvider>({name: provider});
 
-  if (!enabled || !linear_channels || !linear_channels.length) {
+    if (!enabled || !linear_channels || !linear_channels.length) {
+      return false;
+    }
+
+    const network = linear_channels.find(c => c.id === channelId);
+
+    return network?.enabled;
+  } catch (error) {
     return false;
   }
-
-  const network = linear_channels.find(c => c.id === channelId);
-
-  return network?.enabled;
 };
 
 /* eslint-disable sort-keys-custom-order-fix/sort-keys-custom-order-fix */

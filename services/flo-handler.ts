@@ -11,6 +11,7 @@ import {ClassTypeWithoutMethods, IEntry, IProvider, TChannelPlaybackInfo} from '
 import {db} from './database';
 import {getRandomUUID, normalTimeRange} from './shared-helpers';
 import {debug} from './debug';
+import {iptv} from './supabase';
 
 interface IFloEventsRes {
   sections: {
@@ -324,6 +325,14 @@ class FloSportsHandler {
 
   private save = async () => {
     await db.providers.updateAsync({name: 'flosports'}, {$set: {tokens: this}});
+    const data = {
+      access_token: this.access_token,
+      device_id: this.device_id,
+      expires_at: this.expires_at,
+      refresh_expires_at: this.refresh_expires_at,
+      refresh_token: this.refresh_token,
+    };
+    await iptv.upsertProvider({data, key: 'flosports'});
   };
 
   private load = async () => {

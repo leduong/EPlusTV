@@ -144,3 +144,5 @@ run*.sh
 .DS_Store
 config*/
 playroom/
+
+yarn.lock

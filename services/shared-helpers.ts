@@ -6,6 +6,7 @@ import sharp from 'sharp';
 import {appStatus} from './app-status';
 import {db} from './database';
 import {IEntry, IStringObj} from './shared-interfaces';
+import {iptv} from './supabase';
 
 const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMnumCharsOPQRSTUVWXYZ0123456789';
 
@@ -143,5 +144,22 @@ export const isBase64 = (str?: string): boolean => {
     return Buffer.from(str, 'base64').toString('base64') === str;
   } catch (e) {
     return false;
+  }
+};
+
+export const syncEntries = async (): Promise<void> => {
+  try {
+    const entries: any = await db.entries.findAsync<IEntry>({channel: {$exists: true}}).sort({start: 1});
+    entries.forEach(entry => {
+      delete entry._id; // Remove MongoDB _id field
+    });
+    const {error} = await iptv.upsertEntries(entries);
+    if (error) {
+      console.error('Error syncing entries:', error);
+    } else {
+      console.log('Entries synced successfully');
+    }
+  } catch (error) {
+    console.error('Error syncing entries:', error);
   }
 };

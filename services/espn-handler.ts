@@ -39,8 +39,9 @@ import {
 import {db} from './database';
 import {debug} from './debug';
 import {usesLinear} from './misc-db-service';
+import {iptv} from './supabase';
 
-global.WebSocket = ws;
+global.WebSocket = ws as any;
 
 const espnPlusTokens = path.join(configPath, 'espn_plus_tokens.json');
 const espnLinearTokens = path.join(configPath, 'espn_linear_tokens.json');
@@ -1413,8 +1414,21 @@ class EspnHandler {
       {name: 'espnplus'},
       {$set: {tokens: _.omit(this, 'appConfig', 'graphQlApiKey', 'adobe_auth', 'adobe_device_id')}},
     );
-
+    const data = _.pick(
+      this,
+      'tokens',
+      'device_grant',
+      'device_token_exchange',
+      'device_refresh_token',
+      'id_token_grant',
+      'account_token',
+      'device_token_exchange_expires',
+      'device_refresh_token_expires',
+      'account_token_expires',
+    );
     await db.providers.updateAsync({name: 'espn'}, {$set: {tokens: _.pick(this, 'adobe_auth', 'adobe_device_id')}});
+    await iptv.upsertProvider({data, key: 'espnplus'});
+    await iptv.upsertProvider({data: _.pick(this, 'adobe_auth', 'adobe_device_id'), key: 'espn'});
   };
 
   private load = async (): Promise<void> => {

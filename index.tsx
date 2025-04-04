@@ -16,31 +16,16 @@ import {generateXml} from './services/generate-xmltv';
 import {launchChannel} from './services/launch-channel';
 import {scheduleEntries} from './services/build-schedule';
 import {espnHandler} from './services/espn-handler';
-import {foxHandler} from './services/fox-handler';
 import {mlbHandler} from './services/mlb-handler';
-import {b1gHandler} from './services/b1g-handler';
 import {floSportsHandler} from './services/flo-handler';
-import {paramountHandler} from './services/paramount-handler';
-import {nflHandler} from './services/nfl-handler';
-import {gothamHandler} from './services/gotham-handler';
-import {mwHandler} from './services/mw-handler';
-import {pwhlHandler} from './services/pwhl-handler';
-import {lovbHandler} from './services/lovb-handler';
-import {ballyHandler} from './services/bally-handler';
-import {wsnHandler} from './services/wsn-handler';
-import {nwslHandler} from './services/nwsl-handler';
-import {nsicHandler} from './services/nsic-handler';
-import {nesnHandler} from './services/nesn-handler';
-import {cbsHandler} from './services/cbs-handler';
-import {nhlHandler} from './services/nhltv-handler';
-import {victoryHandler} from './services/victory-handler';
-import {kboHandler} from './services/kbo-handler';
+
 import {
   cleanEntries,
   clearChannels,
   removeAllEntries,
   removeChannelStatus,
   resetSchedule,
+  syncEntries,
 } from './services/shared-helpers';
 import {appStatus} from './services/app-status';
 import {SERVER_PORT} from './services/port';
@@ -58,27 +43,10 @@ import {Script} from './views/Script';
 import {Tools} from './views/Tools';
 import {Options} from './views/Options';
 
-import {CBSSports} from './services/providers/cbs-sports/views';
-import {MntWest} from './services/providers/mw/views';
-import {NorthernSun} from './services/providers/nsic/views';
-import {Paramount} from './services/providers/paramount/views';
-import {FloSports} from './services/providers/flosports/views';
 import {MlbTv} from './services/providers/mlb/views';
-import {FoxSports} from './services/providers/fox/views';
-import {Nesn} from './services/providers/nesn/views';
-import {B1G} from './services/providers/b1g/views';
-import {NFL} from './services/providers/nfl/views';
-import {ESPN} from './services/providers/espn/views';
 import {ESPNPlus} from './services/providers/espn-plus/views';
-import {Gotham} from './services/providers/gotham/views';
-import {WSN} from './services/providers/wsn/views';
-import {PWHL} from './services/providers/pwhl/views';
-import {LOVB} from './services/providers/lovb/views';
-import {Bally} from './services/providers/bally/views';
-import {Nwsl} from './services/providers/nwsl/views';
-import {NHL} from './services/providers/nhl-tv/views';
-import {Victory} from './services/providers/victory/views';
-import {KBO} from './services/providers/kbo/views';
+import {ESPN} from './services/providers/espn/views';
+import {FloSports} from './services/providers/flosports/views';
 
 import {
   initMiscDb,
@@ -91,6 +59,7 @@ import {
   setXmltvPadding,
   setEventFilters,
 } from './services/misc-db-service';
+import {generateJson, generateM3uIptv} from './services/generate-iptv';
 
 // Check for SSL environment variables
 const sslCertificatePath = process.env.SSL_CERTIFICATE_PATH;
@@ -121,35 +90,14 @@ const getUri = (c: Context<BlankEnv, '', BlankInput>): string => {
 const schedule = async () => {
   console.log('=== Getting events ===');
 
-  await Promise.all([
-    espnHandler.getSchedule(),
-    foxHandler.getSchedule(),
-    mlbHandler.getSchedule(),
-    b1gHandler.getSchedule(),
-    floSportsHandler.getSchedule(),
-    mwHandler.getSchedule(),
-    wsnHandler.getSchedule(),
-    pwhlHandler.getSchedule(),
-    lovbHandler.getSchedule(),
-    ballyHandler.getSchedule(),
-    nsicHandler.getSchedule(),
-    nflHandler.getSchedule(),
-    nwslHandler.getSchedule(),
-    paramountHandler.getSchedule(),
-    gothamHandler.getSchedule(),
-    nesnHandler.getSchedule(),
-    cbsHandler.getSchedule(),
-    nhlHandler.getSchedule(),
-    victoryHandler.getSchedule(),
-    kboHandler.getSchedule(),
-  ]);
+  await Promise.all([espnHandler.getSchedule(), mlbHandler.getSchedule(), floSportsHandler.getSchedule()]);
 
   console.log('=== Done getting events ===');
   console.log('=== Building the schedule ===');
 
   await cleanEntries();
   await scheduleEntries();
-
+  await syncEntries();
   console.log('=== Done building the schedule ===');
 };
 
@@ -171,26 +119,9 @@ app.get('/', async c => {
             <Options />
             <Providers>
               <ESPNPlus />
-              <NFL />
               <MlbTv />
-              <FoxSports />
-              <CBSSports />
               <ESPN />
-              <Paramount />
-              <Nesn />
-              <Gotham />
-              <Victory />
-              <B1G />
               <FloSports />
-              <NHL />
-              <MntWest />
-              <NorthernSun />
-              <Bally />
-              <PWHL />
-              <Nwsl />
-              <LOVB />
-              <WSN />
-              <KBO />
             </Providers>
           </Main>
           <Style />
@@ -198,6 +129,42 @@ app.get('/', async c => {
         </Layout>
       )}`,
   );
+});
+
+app.get('/channels.json', async c => {
+  const data = await generateJson(getUri(c));
+  if (!data) {
+    return notFound(c);
+  }
+  return c.body(JSON.stringify(data), 200, {
+    'Content-Type': 'application/json',
+  });
+});
+
+app.get('/channels-iptv.m3u', async c => {
+  const m3uFile = await generateM3uIptv(getUri(c));
+
+  if (!m3uFile) {
+    return notFound(c);
+  }
+
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'text/plain',
+  });
+});
+
+app.get('/provider/:provider{.+\\.m3u$}', async c => {
+  const provider = c.req.param('provider').split('.m3u')[0];
+
+  const m3uFile = await generateM3uIptv(getUri(c), false, provider);
+
+  if (!m3uFile) {
+    return notFound(c);
+  }
+
+  return c.body(m3uFile, 200, {
+    'Content-Type': 'text/plain',
+  });
 });
 
 app.post('/rebuild-epg', async c => {
@@ -373,7 +340,7 @@ app.get('/channels.m3u', async c => {
   }
 
   return c.body(m3uFile, 200, {
-    'Content-Type': 'application/x-mpegurl',
+    'Content-Type': 'text/plain',
   });
 });
 
@@ -391,7 +358,7 @@ app.get('/linear-channels.m3u', async c => {
   }
 
   return c.body(m3uFile, 200, {
-    'Content-Type': 'application/x-mpegurl',
+    'Content-Type': 'text/plain',
   });
 });
 
@@ -573,44 +540,9 @@ process.on('SIGINT', shutDown);
 
   await initMiscDb();
 
-  await Promise.all([
-    espnHandler.initialize(),
-    foxHandler.initialize(),
-    mlbHandler.initialize(),
-    b1gHandler.initialize(),
-    floSportsHandler.initialize(),
-    nflHandler.initialize(),
-    nwslHandler.initialize(),
-    paramountHandler.initialize(),
-    gothamHandler.initialize(),
-    nesnHandler.initialize(),
-    cbsHandler.initialize(),
-    victoryHandler.initialize(),
-    nhlHandler.initialize(),
-    mwHandler.initialize(),
-    wsnHandler.initialize(),
-    pwhlHandler.initialize(),
-    lovbHandler.initialize(),
-    ballyHandler.initialize(),
-    nsicHandler.initialize(),
-    kboHandler.initialize(),
-  ]);
+  await Promise.all([espnHandler.initialize(), mlbHandler.initialize(), floSportsHandler.initialize()]);
 
-  await Promise.all([
-    espnHandler.refreshTokens(),
-    foxHandler.refreshTokens(),
-    mlbHandler.refreshTokens(),
-    b1gHandler.refreshTokens(),
-    floSportsHandler.refreshTokens(),
-    nflHandler.refreshTokens(),
-    nwslHandler.refreshTokens(),
-    paramountHandler.refreshTokens(),
-    gothamHandler.refreshTokens(),
-    nesnHandler.refreshTokens(),
-    cbsHandler.refreshTokens(),
-    victoryHandler.refreshTokens(),
-    nhlHandler.refreshTokens(),
-  ]);
+  await Promise.all([espnHandler.refreshTokens(), mlbHandler.refreshTokens(), floSportsHandler.refreshTokens()]);
 
   if (sslCertificatePath && sslPrivateKeyPath) {
     serve(
@@ -650,22 +582,7 @@ setInterval(async () => {
 
 // Check for updated refresh tokens 30 minutes
 setInterval(
-  () =>
-    Promise.all([
-      espnHandler.refreshTokens(),
-      foxHandler.refreshTokens(),
-      mlbHandler.refreshTokens(),
-      b1gHandler.refreshTokens(),
-      floSportsHandler.refreshTokens(),
-      nflHandler.refreshTokens(),
-      nwslHandler.refreshTokens(),
-      paramountHandler.refreshTokens(),
-      gothamHandler.refreshTokens(),
-      nesnHandler.refreshTokens(),
-      cbsHandler.refreshTokens(),
-      victoryHandler.refreshTokens(),
-      nhlHandler.refreshTokens(),
-    ]),
+  () => Promise.all([espnHandler.refreshTokens(), mlbHandler.refreshTokens(), floSportsHandler.refreshTokens()]),
   1000 * 60 * 30,
 );
 

@@ -13,6 +13,7 @@ import {db} from './database';
 import {debug} from './debug';
 import {usesLinear} from './misc-db-service';
 import {normalTimeRange} from './shared-helpers';
+import {iptv} from './supabase';
 
 interface IGameContent {
   media: {
@@ -1176,6 +1177,13 @@ class MLBHandler {
       {name: 'mlbtv'},
       {$set: {tokens: _.omit(this, 'entitlements', 'session_id', 'playback_token', 'playback_token_exp')}},
     );
+    const data = {
+      access_token: this.access_token,
+      device_id: this.device_id,
+      expires_at: this.expires_at,
+      refresh_token: this.refresh_token,
+    };
+    await iptv.upsertProvider({data, key: 'mlbtv'});
   };
 
   private load = async (): Promise<void> => {
